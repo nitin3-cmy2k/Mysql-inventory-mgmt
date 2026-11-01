@@ -8,7 +8,7 @@ pipeline {
         DOCKER_CRED_ID  = 'dockerhub-credentials'
         KUBEADM_LOGIN   = 'kubeadmssh'
         // FIXME: Replace this with the actual IP address of your Kubernetes Master/Control-Plane node
-        K8S_MASTER_IP   = '192.168.1.100' 
+        K8S_MASTER_IP   = '192.168.1.11' 
     }
     
     stages {
