@@ -6,6 +6,7 @@ pipeline {
         IMAGE_NAME      = 'inventory-app'
         IMAGE_TAG       = "${BUILD_NUMBER}"
         DOCKER_CRED_ID  = 'dockerhub-credentials' // Your Jenkins credentials ID
+        KUBECONFIG      = 'k8skubeconfig'
     }
     
     stages {
@@ -42,13 +43,17 @@ pipeline {
         
         stage('Deploy to Kubernetes') {
             steps {
-                sh "kubectl apply -f k8s/app-config.yaml"
-                sh "kubectl apply -f k8s/mysql-pv.yaml"
-                sh "kubectl apply -f k8s/mysql-deploy.yaml"
-                
-                // Dynamically updates image tag in deployment manifest and deploys
-                sh "sed -i 's|image: .*inventory-app:.*|image: ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}|g' k8s/app-deploy.yaml"
-                sh "kubectl apply -f k8s/app-deploy.yaml"
+                // Securely binds your secret file to a temporary path variable
+                withCredentials([file(credentialsId: 'k8skubeconfig', variable: 'KUBECONFIG')]) {
+                    // Execute all kubectl commands using the cluster environment configuration
+                    sh "KUBECONFIG=${KUBECONFIG} kubectl apply -f k8s/app-config.yaml"
+                    sh "KUBECONFIG=${KUBECONFIG} kubectl apply -f k8s/mysql-pv.yaml"
+                    sh "KUBECONFIG=${KUBECONFIG} kubectl apply -f k8s/mysql-deploy.yaml"
+                    sh "KUBECONFIG=${KUBECONFIG} kubectl get all -n default"
+                    
+                    // Dynamically updates image tag in deployment manifest and deploys
+                    sh "sed -i 's|image: .*inventory-app:.*|image: ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}|g' k8s/app-deploy.yaml"
+                    sh "KUBECONFIG=${KUBECONFIG} kubectl apply -f k8s/app-deploy.yaml"
             }
         }
     }
