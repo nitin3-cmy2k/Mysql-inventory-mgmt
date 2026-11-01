@@ -18,7 +18,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    appImage = docker build("${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}")
+                    appImage = docker build("${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}") .
                 }
             }
         }
