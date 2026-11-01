@@ -46,10 +46,10 @@ pipeline {
                 // Securely binds your secret file to a temporary path variable
                 withCredentials([file(credentialsId: 'k8skubeconfig', variable: 'KUBECONFIG')]) {
                     // Execute all kubectl commands using the cluster environment configuration
-                    sh "KUBECONFIG=${KUBECONFIG} kubectl apply -f k8s/app-config.yaml --validate=false"
-                    sh "KUBECONFIG=${KUBECONFIG} kubectl apply -f k8s/mysql-pv.yaml --validate=false"
-                    sh "KUBECONFIG=${KUBECONFIG} kubectl apply -f k8s/mysql-deploy.yaml --validate=false"
-                    sh "KUBECONFIG=${KUBECONFIG} kubectl get all -n default --validate=false"
+                    sh "kubectl apply -f k8s/app-config.yaml --validate=false"
+                    sh "kubectl apply -f k8s/mysql-pv.yaml --validate=false"
+                    sh "kubectl apply -f k8s/mysql-deploy.yaml --validate=false"
+                    sh "kubectl get all -n default --validate=false"
                     
                     // Dynamically updates image tag in deployment manifest and deploys
                     sh "sed -i 's|image: .*inventory-app:.*|image: ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}|g' k8s/app-deploy.yaml"
