@@ -2,10 +2,10 @@ pipeline {
     agent any
     
     environment {
-        DOCKER_REGISTRY = 'nitin3cmy2k'
+        DOCKER_USER     = 'nitin3cmy2k'
         IMAGE_NAME      = 'inventory-app'
         IMAGE_TAG       = "${BUILD_NUMBER}"
-        DOCKER_CRED_ID  = 'dockerhub-credentials' // Configured in Jenkins Credentials
+        DOCKER_CRED_ID  = 'dockerhub-credentials'
     }
     
     stages {
@@ -17,35 +17,33 @@ pipeline {
         
         stage('Build Docker Image') {
             steps {
-                script {
-                    // FIXED: Corrected the syntax method call and string argument
-                    appImage = docker.build("${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}")
-                }
+                // Using shell step instead of the docker plugin wrapper
+                sh "docker build -t ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} ."
             }
         }
         
         stage('Push to Registry') {
             steps {
-                script {
-                    docker.withRegistry('', DOCKER_CRED_ID) {
-                        appImage.push()
-                        appImage.push('latest')
-                    }
+                // withCredentials injects your credentials securely as environment variables
+                withCredentials([usernamePassword(credentialsId: DOCKER_CRED_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh "echo '${DOCKER_PASS}' | docker login -u '${DOCKER_USER}' --password-stdin"
+                    
+                    // Tag and push images
+                    sh "docker tag ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} ${DOCKER_REGISTRY}/${IMAGE_NAME}:latest"
+                    sh "docker push ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+                    sh "docker push ${DOCKER_REGISTRY}/${IMAGE_NAME}:latest"
+                    
+                    // Clean up local authentication state
+                    sh "docker logout"
                 }
             }
         }
         
         stage('Deploy to Kubernetes') {
             steps {
-                // Assumes kubectl is installed and configured on the Jenkins agent
-                // Apply ConfigMap and Secret first
                 sh "kubectl apply -f k8s/app-config.yaml"
-        
-                // Apply Storage and Database
                 sh "kubectl apply -f k8s/mysql-pv.yaml"
                 sh "kubectl apply -f k8s/mysql-deploy.yaml"
-        
-                // Dynamically updates image tag in deployment manifest and deploy app
                 sh "sed -i 's|image: .*inventory-app:.*|image: ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}|g' k8s/app-deploy.yaml"
                 sh "kubectl apply -f k8s/app-deploy.yaml"
             }
