@@ -4,8 +4,9 @@ metadata:
   name: inventory-config
 data:
   DB_HOST: "mysql-service"
-  DB_NAME: "inventory_db"
+  DB_PORT: "3306"
   DB_USER: "root"
+  DB_NAME: "inventory_db"
 ---
 apiVersion: v1
 kind: Secret

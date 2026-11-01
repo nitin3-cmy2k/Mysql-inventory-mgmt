@@ -1,8 +1,10 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet # Changed from Deployment
 metadata:
   name: mysql
 spec:
+  serviceName: mysql-service # Required for StatefulSet
+  replicas: 1
   selector:
     matchLabels:
       app: mysql

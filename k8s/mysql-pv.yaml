@@ -1,3 +1,10 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-storage
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -9,8 +16,9 @@ spec:
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage # Links to your local StorageClass
   local:
-    path: /mnt/disks/vol1 # Update this path to match your node's actual storage path
+    path: /mnt/disks/vol1 # Ensure this directory exists on the 'slave' node
   nodeAffinity:
     required:
       nodeSelectorTerms:
@@ -18,4 +26,17 @@ spec:
         - key: kubernetes.io/hostname
           operator: In
           values:
-          - slave # Change this to the exact name of the node where the local path exists
+          - slave # Ensure this matches your node's exact hostname
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-storage # Tells the PVC to bind using this class
+  resources:
+    requests:
+      storage: 5Gi
+
