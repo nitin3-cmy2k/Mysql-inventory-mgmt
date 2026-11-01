@@ -18,7 +18,8 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    appImage = docker build("${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}") .
+                    // FIXED: Corrected the syntax method call and string argument
+                    appImage = docker.build("${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}")
                 }
             }
         }
@@ -26,7 +27,6 @@ pipeline {
         stage('Push to Registry') {
             steps {
                 script {
-                    // Fixed: Wrapped 'dockerhub-credentials' in quotes or used the DOCKER_CRED_ID environment variable
                     docker.withRegistry('', DOCKER_CRED_ID) {
                         appImage.push()
                         appImage.push('latest')
