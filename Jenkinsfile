@@ -7,32 +7,24 @@ pipeline {
         IMAGE_TAG       = "${BUILD_NUMBER}"
         DOCKER_CRED_ID  = 'dockerhub-credentials' // Configured in Jenkins Credentials
     }
-    
-    stages {
+     stages {
         stage('Checkout Code') {
             steps {
                 checkout scm
             }
         }
-        
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    appImage = docker.build("${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}")
-                }
-            }
-        }
-        
-        stage('Push to Registry') {
-            steps {
-                script {
-                    docker.withRegistry('', dockerhub-credentials) {
-                        appImage.push()
-                        appImage.push('latest')
+
+        stage('Build Docker Images') {
+            parallel {
+                stage('Build inventory-app') {
+                    steps {
+                        script {
+                            echo 'Building Inventory-app Docker Image...'
+                            sh "docker build -t ${DOCKER_REGISTRY_USER}/${inventory-app}:${IMAGE_TAG} ./inventory-app"
+                            sh "docker tag ${DOCKER_REGISTRY_USER}/${inventory-app}:${IMAGE_TAG} ${DOCKER_REGISTRY_USER}/${inventory-app}:latest"
+                        }
                     }
                 }
-            }
-        }
         
         stage('Deploy to Kubernetes') {
             steps {
