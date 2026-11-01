@@ -1,5 +1,5 @@
 pipeline {
-    slave1
+    agent any
     
     environment {
         DOCKER_REGISTRY = 'nitin3cmy2k'
@@ -35,18 +35,15 @@ pipeline {
         
         stage('Deploy to Kubernetes') {
             steps {
-                withCredentials([file(credentialsId: 'k8s-kubeconfig', variable: 'KUBECONFIG_FILE')]) {
-                    sh """
-                        export KUBECONFIG="${KUBECONFIG_FILE}"
-                        
-                        kubectl apply -f k8s/app-config.yaml
-                        kubectl apply -f k8s/mysql-pv.yaml
-                        kubectl apply -f k8s/mysql-deploy.yaml
-                        
-                        sed -i 's|image: .*inventory-app:.*|image: ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}|g' k8s/app-deploy.yaml
-                        kubectl apply -f k8s/app-deploy.yaml
-                    """
-                }
+                // No KUBECONFIG credentials required because Jenkins runs inside the cluster!
+                sh """
+                    kubectl apply -f k8s/app-config.yaml
+                    kubectl apply -f k8s/mysql-pv.yaml
+                    kubectl apply -f k8s/mysql-deploy.yaml
+                    
+                    sed -i 's|image: .*inventory-app:.*|image: ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}|g' k8s/app-deploy.yaml
+                    kubectl apply -f k8s/app-deploy.yaml
+                """
             }
         }
     }
