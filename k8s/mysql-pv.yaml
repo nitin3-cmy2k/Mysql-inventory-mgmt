@@ -16,9 +16,9 @@ spec:
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-storage # Links to your local StorageClass
+  storageClassName: local-storage
   local:
-    path: /mnt/disks/vol1 # Ensure this directory exists on the 'slave' node
+    path: /mnt/disks/vol1
   nodeAffinity:
     required:
       nodeSelectorTerms:
@@ -26,7 +26,7 @@ spec:
         - key: kubernetes.io/hostname
           operator: In
           values:
-          - slave # Ensure this matches your node's exact hostname
+          - slave
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -35,7 +35,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-storage # Tells the PVC to bind using this class
+  storageClassName: local-storage
   resources:
     requests:
       storage: 5Gi

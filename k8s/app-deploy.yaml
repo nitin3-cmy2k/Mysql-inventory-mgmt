@@ -15,14 +15,14 @@ spec:
       containers:
       - name: inventory-app
         image: docker.io/nitin3cmy2k/inventory-app:latest
-        imagePullPolicy: Always # Ensures the cluster drops old cached images for :latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 5000
         envFrom:
         - configMapRef:
-            name: inventory-config # Injects DB_HOST, DB_NAME, DB_USER, and DB_PORT automatically
+            name: inventory-config 
         env:
-        - name: DB_PASSWORD # Injects your database password alongside the ConfigMap keys
+        - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
               name: inventory-secret
