@@ -6,7 +6,6 @@ pipeline {
         IMAGE_NAME      = 'inventory-app'
         IMAGE_TAG       = "${BUILD_NUMBER}"
         DOCKER_CRED_ID  = 'dockerhub-credentials'
-        KUBE_CRED_ID    = 'kubeconfig-credentials-id'
     }
     
     stages {
@@ -36,8 +35,7 @@ pipeline {
         
         stage('Deploy to Kubernetes') {
             steps {
-                // Corrected: Wrapped kubectl steps within the withKubeConfig block
-                withKubeConfig(credentialsId: "${KUBE_CRED_ID}") {
+                script {
                     // Apply Storage and Database
                     sh "kubectl apply -f k8s/mysql-pv.yaml"
                     sh "kubectl apply -f k8s/mysql-deploy.yaml"
