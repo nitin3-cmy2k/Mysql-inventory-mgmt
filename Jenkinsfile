@@ -6,6 +6,7 @@ pipeline {
         IMAGE_NAME      = 'inventory-app'
         IMAGE_TAG       = "${BUILD_NUMBER}"
         DOCKER_CRED_ID  = 'dockerhub-credentials'
+        KUBE_CRED_ID    = 'kubeconfig-credentials-id'
     }
     
     stages {
@@ -35,17 +36,20 @@ pipeline {
         
         stage('Deploy to Kubernetes') {
             steps {
-                // Apply Storage and Database
-                sh "kubectl apply -f k8s/mysql-pv.yaml"
-                sh "kubectl apply -f k8s/mysql-deploy.yaml"
-                sh "kubectl apply -f k8s/app-config.yaml"
+                // Corrected: Wrapped kubectl steps within the withKubeConfig block
+                withKubeConfig(credentialsId: "${KUBE_CRED_ID}") {
+                    // Apply Storage and Database
+                    sh "kubectl apply -f k8s/mysql-pv.yaml"
+                    sh "kubectl apply -f k8s/mysql-deploy.yaml"
+                    sh "kubectl apply -f k8s/app-config.yaml"
 
-                // Dynamically updates image tag in deployment manifest and deploy app
-                sh "sed -i 's|image: .*inventory-app:.*|image: ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}|g' k8s/app-deploy.yaml"
-                sh "kubectl apply -f k8s/app-deploy.yaml"
+                    // Dynamically updates image tag in deployment manifest and deploy app
+                    sh "sed -i 's|image: .*inventory-app:.*|image: ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}|g' k8s/app-deploy.yaml"
+                    sh "kubectl apply -f k8s/app-deploy.yaml"
 
-                // Force the rolling update to use your latest build tag
-                sh "kubectl set image deployment/${IMAGE_NAME} ${IMAGE_NAME}=${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+                    // Force the rolling update to use your latest build tag
+                    sh "kubectl set image deployment/${IMAGE_NAME} ${IMAGE_NAME}=${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+                }
             }
         }
     }
