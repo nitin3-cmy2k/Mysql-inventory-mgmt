@@ -6,9 +6,7 @@ pipeline {
         IMAGE_NAME      = 'inventory-app'
         IMAGE_TAG       = "${BUILD_NUMBER}"
         DOCKER_CRED_ID  = 'dockerhub-credentials'
-        KUBEADM_LOGIN   = 'kubeadmssh'
-        // FIXME: Replace this with the actual IP address of your Kubernetes Master/Control-Plane node
-        K8S_MASTER_IP   = '192.168.1.11' 
+        KUBECONFIG_CRED = 'config' // Your Jenkins Secret File Credentials ID containing the kubeconfig
     }
     
     stages {
@@ -36,27 +34,18 @@ pipeline {
             }
         }
         
-        stage('Deploy to Kubernetes via SSH') {
+        stage('Deploy to Kubernetes') {
             steps {
-                withCredentials([sshUserPrivateKey(credentialsId: env.KUBEADM_LOGIN, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')]) {
-                    // 1. Copy the k8s manifests folder from Jenkins agent to the remote master node
-                    sh "scp -i ${SSH_KEY} -o StrictHostKeyChecking=no -r k8s/ root@${K8S_MASTER_IP}:/tmp/k8s"
+                // withCredentials extracts your kubeconfig file securely to a temporary location path stored in KUBECONFIG
+                withCredentials([file(credentialsId: env.KUBECONFIG_CRED, variable: 'KUBECONFIG')]) {
+                    // Apply manifests using the injected kubeconfig environment variable
+                    sh "kubectl apply -f k8s/"
                     
-                    // 2. Execute the commands remotely on the master node where kubectl is fully configured
-                    sh """
-                        ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no root@${K8S_MASTER_IP} '
-                            kubectl apply -f /tmp/k8s/app-config.yaml
-                            kubectl apply -f /tmp/k8s/mysql-pv.yaml
-                            kubectl apply -f /tmp/k8s/mysql-deploy.yaml
-                            
-                            sed -i "s|image: .*inventory-app:.*|image: ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}|g" /tmp/k8s/app-deploy.yaml
-                            kubectl apply -f /tmp/k8s/app-deploy.yaml
-                            
-                            rm -rf /tmp/k8s
-                        '
-                    """
+                    // Force the rolling update to use your latest build tag
+                    sh "kubectl set image deployment/${IMAGE_NAME} ${IMAGE_NAME}=${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
                 }
             }
         }
     }
 }
+
