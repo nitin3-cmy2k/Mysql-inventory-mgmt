@@ -6,7 +6,6 @@ pipeline {
         IMAGE_NAME      = 'inventory-app'
         IMAGE_TAG       = "${BUILD_NUMBER}"
         DOCKER_CRED_ID  = 'dockerhub-credentials'
-        KUBECONFIG_CRED = 'config' // Your Jenkins Secret File Credentials ID containing the kubeconfig
     }
     
     stages {
@@ -36,24 +35,18 @@ pipeline {
         
         stage('Deploy to Kubernetes') {
             steps {
-                // withCredentials extracts your kubeconfig file securely to a temporary location path stored in KUBECONFIG
-                withCredentials([file(credentialsId: env.KUBECONFIG_CRED, variable: 'KUBECONFIG')]) {
-                  
-                   // Apply Storage and Database
-                     sh "kubectl apply -f k8s/mysql-pv.yaml"
-                     sh "kubectl apply -f k8s/mysql-deploy.yaml"
-                     sh "kubectl apply -f k8s/app-config.yaml"
+                // Apply Storage and Database
+                sh "kubectl apply -f k8s/mysql-pv.yaml"
+                sh "kubectl apply -f k8s/mysql-deploy.yaml"
+                sh "kubectl apply -f k8s/app-config.yaml"
 
-                   // Dynamically updates image tag in deployment manifest and deploy app
-                     sh "sed -i 's|image: .*inventory-app:.*|image: ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}|g' k8s/app-deploy.yaml"
-                     sh "kubectl apply -f k8s/app-deploy.yaml"
+                // Dynamically updates image tag in deployment manifest and deploy app
+                sh "sed -i 's|image: .*inventory-app:.*|image: ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}|g' k8s/app-deploy.yaml"
+                sh "kubectl apply -f k8s/app-deploy.yaml"
 
- 
-                   // Force the rolling update to use your latest build tag
-                     sh "kubectl set image deployment/${IMAGE_NAME} ${IMAGE_NAME}=${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
-                }
+                // Force the rolling update to use your latest build tag
+                sh "kubectl set image deployment/${IMAGE_NAME} ${IMAGE_NAME}=${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
             }
         }
     }
 }
-
