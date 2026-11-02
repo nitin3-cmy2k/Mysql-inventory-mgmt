@@ -42,6 +42,7 @@ pipeline {
                    // Apply Storage and Database
                      sh "kubectl apply -f k8s/mysql-pv.yaml"
                      sh "kubectl apply -f k8s/mysql-deploy.yaml"
+                     sh "kubectl apply -f k8s/app-config.yaml"
 
                    // Dynamically updates image tag in deployment manifest and deploy app
                      sh "sed -i 's|image: .*inventory-app:.*|image: ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}|g' k8s/app-deploy.yaml"
