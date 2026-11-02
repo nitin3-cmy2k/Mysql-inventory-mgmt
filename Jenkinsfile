@@ -1,5 +1,5 @@
 pipeline {
-    agent slave1
+    agent any
     
     environment {
         DOCKER_REGISTRY = 'nitin3cmy2k'
