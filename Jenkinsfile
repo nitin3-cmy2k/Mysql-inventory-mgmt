@@ -38,11 +38,18 @@ pipeline {
             steps {
                 // withCredentials extracts your kubeconfig file securely to a temporary location path stored in KUBECONFIG
                 withCredentials([file(credentialsId: env.KUBECONFIG_CRED, variable: 'KUBECONFIG')]) {
-                    // Apply manifests using the injected kubeconfig environment variable
-                    sh "kubectl apply -f k8s/"
-                    
-                    // Force the rolling update to use your latest build tag
-                    sh "kubectl set image deployment/${IMAGE_NAME} ${IMAGE_NAME}=${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+                  
+                   // Apply Storage and Database
+                     sh "kubectl apply -f k8s/mysql-pv.yaml"
+                     sh "kubectl apply -f k8s/mysql-deploy.yaml"
+
+                   // Dynamically updates image tag in deployment manifest and deploy app
+                     sh "sed -i 's|image: .*inventory-app:.*|image: ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}|g' k8s/app-deploy.yaml"
+                     sh "kubectl apply -f k8s/app-deploy.yaml"
+
+ 
+                   // Force the rolling update to use your latest build tag
+            sh "kubectl set image deployment/${IMAGE_NAME} ${IMAGE_NAME}=${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
                 }
             }
         }
