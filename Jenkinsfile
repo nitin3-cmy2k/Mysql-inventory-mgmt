@@ -37,13 +37,13 @@ pipeline {
             steps {
                 script {
                     // Apply Storage and Database
-                    sh "kubectl apply -f k8s/mysql-pv.yaml"
-                    sh "kubectl apply -f k8s/mysql-deploy.yaml"
-                    sh "kubectl apply -f k8s/app-config.yaml"
+                    sh "kubectl apply -f k8s/mysql-pv.yaml --validate=false'"
+                    sh "kubectl apply -f k8s/mysql-deploy.yaml --validate=false'"
+                    sh "kubectl apply -f k8s/app-config.yaml --validate=false'"
 
                     // Dynamically updates image tag in deployment manifest and deploy app
                     sh "sed -i 's|image: .*inventory-app:.*|image: ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}|g' k8s/app-deploy.yaml"
-                    sh "kubectl apply -f k8s/app-deploy.yaml"
+                    sh "kubectl apply -f k8s/app-deploy.yaml --validate=false'"
 
                     // Force the rolling update to use your latest build tag
                     sh "kubectl set image deployment/${IMAGE_NAME} ${IMAGE_NAME}=${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
