@@ -1,13 +1,19 @@
 pipeline {
-    agent any
-    
-    environment {
-        DOCKER_REGISTRY = 'nitin3cmy2k'
-        IMAGE_NAME      = 'inventory-app'
-        IMAGE_TAG       = "${BUILD_NUMBER}"
-        DOCKER_CRED_ID  = 'dockerhub-credentials'
+    // 1. Force the pipeline to use your specific Kubernetes agent Pod
+    agent {
+        label 'jenkins-agent'
     }
     
+    environment {
+        DOCKER_HOST       = 'tcp://127.0.0.1:2376'
+        DOCKER_TLS_VERIFY = '1'
+        DOCKER_CERT_PATH  = '/certs/client'
+        DOCKER_REGISTRY   = 'nitin3cmy2k'
+        IMAGE_NAME        = 'inventory-app'
+        IMAGE_TAG         = "${BUILD_NUMBER}"
+        DOCKER_CRED_ID    = 'dockerhub-credentials'
+    }
+
     stages {
         stage('Checkout Code') {
             steps {
@@ -28,7 +34,7 @@ pipeline {
                     sh "docker tag ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} ${DOCKER_REGISTRY}/${IMAGE_NAME}:latest"
                     sh "docker push ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
                     sh "docker push ${DOCKER_REGISTRY}/${IMAGE_NAME}:latest"
-                    sh "docker logout"
+                  
                 }
             }
         }
